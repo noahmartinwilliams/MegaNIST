@@ -1,10 +1,22 @@
 package main
 
 import "math/rand"
+//import "fmt"
 
 type Coord struct {
 	X int
 	Y int
+}
+
+func GetRandsLimited(num int) chan int {
+	retc := make(chan int, 1024)
+	go func() {
+		defer close(retc)
+		for ; num > 0 ; num = num - 1 {
+			retc <- rand.Int()
+		}
+	} ()
+	return retc
 }
 
 func GetRands() chan int {

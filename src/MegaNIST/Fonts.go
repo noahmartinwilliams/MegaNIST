@@ -1,6 +1,6 @@
 package main
 
-import "gopkg.in/gographics/imagick.v3/imagick"
+import . "gopkg.in/gographics/imagick.v3/imagick"
 import "regexp"
 
 func isFontFile(fname string) bool {
@@ -8,8 +8,8 @@ func isFontFile(fname string) bool {
 	return matched
 }
 
-func GetFonts(dirname string) chan DrawingWand {
-	retc := make(chan DrawingWand, 1024)
+func GetFonts(dirname string) chan *DrawingWand {
+	retc := make(chan *DrawingWand, 1024)
 	go func() {
 		defer close(retc)
 		inputc := FindFiles(dirname, false)
