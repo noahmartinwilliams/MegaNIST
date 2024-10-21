@@ -4,13 +4,6 @@ import . "gopkg.in/gographics/imagick.v3/imagick"
 import "sync"
 import "strconv"
 
-func abs(input int) int {
-	if input >= 0 {
-		return input
-	} else {
-		return -input
-	}
-}
 type Img struct {
 	Image *MagickWand
 	Number int
@@ -54,9 +47,14 @@ func GetImages(coords chan Coord, angles chan float64, fonts chan *DrawingWand, 
 	go func() {
 		var wg sync.WaitGroup
 		defer close(retc)
+		numInputs := 0
 		for input := range inputc {
+			if numInputs % 512 == 1 {
+				wg.Wait()
+			}
 			wg.Add(1)
 			launchImager(&wg, retc, input)
+			numInputs = numInputs + 1
 		}
 		wg.Wait()
 	} ()
@@ -72,20 +70,14 @@ func launchImager(wg *sync.WaitGroup, retc chan Img, input Merged) {
 		input.Fonts.SetFontSize(12)
 		input.Fonts.Annotation(float64(input.Coordinate.X), float64(input.Coordinate.Y), strconv.Itoa(input.Num))
 		input.Fonts.Rotate(input.Angle)
-		defer pxwand.Destroy()
 
-		blackWand := NewDrawingWand()
 		pxwand2 := NewPixelWand()
 		pxwand2.SetColor("#000000")
 
-		defer pxwand2.Destroy()
 
-		blackWand.SetFillColor(pxwand2)
-		blackWand.Color(0, 0, PAINT_METHOD_RESET )
 
 		img := NewMagickWand()
-		img.SetSize(28, 28)
-		img.DrawImage(blackWand)
+		img.NewImage(28, 28, pxwand2)
 		img.DrawImage(input.Fonts)
 		retc <- Img{Image:img, Number:input.Num}
 

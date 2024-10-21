@@ -1,7 +1,6 @@
 package main
 
 import "math/rand"
-//import "fmt"
 
 type Coord struct {
 	X int
@@ -9,7 +8,7 @@ type Coord struct {
 }
 
 func GetRandsLimited(num int) chan int {
-	retc := make(chan int, 1024)
+	retc := make(chan int, 128)
 	go func() {
 		defer close(retc)
 		for ; num > 0 ; num = num - 1 {
@@ -20,26 +19,28 @@ func GetRandsLimited(num int) chan int {
 }
 
 func GetRands() chan int {
-	retc := make(chan int, 1024)
+	retc := make(chan int, 128)
 	go func() {
 		defer close(retc)
-		retc <- rand.Int()
+		for {
+			retc <- rand.Int()
+		}
 	} ()
 	return retc
 }
 
 func GetRandCoords(inputc chan int, maxX int, maxY int) chan Coord {
-	retc := make(chan Coord, 1024)
+	retc := make(chan Coord, 128)
 	go func() {
 		defer close(retc)
 		for {
 			x, done := <- inputc
-			if done {
+			if !done {
 				return
 			}
 			y, done2 := <- inputc
 
-			if done2 {
+			if !done2 {
 				return
 			}
 			retc <- Coord{X:(x%maxX), Y:(y%maxY)}
@@ -49,7 +50,7 @@ func GetRandCoords(inputc chan int, maxX int, maxY int) chan Coord {
 }
 
 func GetRandAngles(inputc chan int, maxAngle float64) chan float64 {
-	retc := make(chan float64, 1024)
+	retc := make(chan float64, 128)
 	go func() {
 		defer close(retc)
 		for input := range inputc {

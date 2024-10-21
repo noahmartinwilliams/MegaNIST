@@ -8,18 +8,28 @@ func isFontFile(fname string) bool {
 	return matched
 }
 
-func GetFonts(dirname string) chan *DrawingWand {
+func GetFontFiles(dirname string) []*DrawingWand {
+	inputc := FindFiles(dirname, false)
+	hash := make([]*DrawingWand, 0)
+	for input := range inputc {
+		if isFontFile(input) {
+			dw := NewDrawingWand()
+			dw.SetFont(input)
+			hash = append(hash, dw)
+		}
+	}
+	return hash
+}
+func GetFonts(dirname string, rands chan int) chan *DrawingWand {
 	retc := make(chan *DrawingWand, 1024)
+	hash := GetFontFiles(dirname)
 	go func() {
 		defer close(retc)
-		inputc := FindFiles(dirname, false)
-		for input := range inputc {
-			dw := NewDrawingWand()
-			if isFontFile(input) {
-				dw.SetFont(input)
-				retc <- dw
-			}
+		length := len(hash)
+		for rand := range rands {
+			retc <- hash[abs(rand) % length]
 		}
+
 	} ()
 	return retc
 

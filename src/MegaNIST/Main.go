@@ -2,7 +2,8 @@ package main
 
 import "os"
 import "encoding/binary"
-//import "fmt"
+import "gopkg.in/gographics/imagick.v3/imagick"
+import "fmt"
 
 func SaveImgs(numImgs uint32, inputc chan Img, fnameImg string, fnameLabel string) {
 	fileImg, err := os.Create(fnameImg)
@@ -39,22 +40,34 @@ func SaveImgs(numImgs uint32, inputc chan Img, fnameImg string, fnameLabel strin
 
 	for input := range inputc {
 		flattened:=flattenImg(input)
-		fileImg.Write(flattened)
+		_, err := fileImg.Write(flattened)
+		if err != nil {
+			panic(err)
+		}
 		//bs := make([]byte, 1)
 		//binary.LittleEndian.PutUint8(bs, uint8(input.Number))
-		fileLabel.Write([]byte{uint8(input.Number)})
+		_, err = fileLabel.Write([]byte{uint8(input.Number)})
+		fmt.Println(input.Number)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
 func flattenImg(image Img) []byte {
 	ret := make([]byte, 28*28)
+	var colorWand *imagick.PixelWand
+	var err error
 	for y := 0 ; y < 28 ; y = y + 1 {
 		for x := 0 ; x < 28 ; x=x+1 {
-			colorWand, _ := image.Image.GetImagePixelColor(x, y)
-			defer colorWand.Destroy()
+			colorWand, err = image.Image.GetImagePixelColor(x, y)
+			if err != nil {
+				panic(err)
+			}
 
 			intensity := byte(uint8(colorWand.GetRed()*255.0))
 			ret[y*28+x]=intensity
+			colorWand.Destroy()
 		}
 	}
 	image.Image.Destroy()
@@ -62,14 +75,15 @@ func flattenImg(image Img) []byte {
 }
 
 func main() {
+	imagick.Initialize()
+	defer imagick.Terminate()
 	numc := GetRandsLimited(60000)
 	numc2 := GetRands()
-	numc3 := GetRands()
 
 	anglesc := GetRandAngles(numc2, 15*3.141592/180.0)
-	fontsc := GetFonts("/usr/share/fonts")
-	coordsc := GetRandCoords(numc3, 5, 5)
+	fontsc := GetFonts("/usr/share/fonts", numc)
+	coordsc := GetRandCoords(numc2, 5, 5)
 
-	imgc := GetImages(coordsc, anglesc, fontsc, numc)
-	SaveImgs(60000, imgc, "images.img", "images.label")
+	imgc := GetImages(coordsc, anglesc, fontsc, numc2)
+	SaveImgs(60000, imgc, "/tmp/images.img", "/tmp/images.label")
 }
