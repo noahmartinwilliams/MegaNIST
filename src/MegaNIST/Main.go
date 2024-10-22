@@ -3,8 +3,8 @@ package main
 import "os"
 import "encoding/binary"
 import "gopkg.in/gographics/imagick.v3/imagick"
-import "fmt"
 import "runtime"
+import "flag"
 
 func SaveImgs(numImgs uint32, inputc chan Img, fnameImg string, fnameLabel string) {
 	fileImg, err := os.Create(fnameImg)
@@ -48,7 +48,6 @@ func SaveImgs(numImgs uint32, inputc chan Img, fnameImg string, fnameLabel strin
 		//bs := make([]byte, 1)
 		//binary.LittleEndian.PutUint8(bs, uint8(input.Number))
 		_, err = fileLabel.Write([]byte{uint8(input.Number)})
-		fmt.Println(input.Number)
 		if err != nil {
 			panic(err)
 		}
@@ -79,13 +78,25 @@ func flattenImg(image Img) []byte {
 func main() {
 	imagick.Initialize()
 	defer imagick.Terminate()
-	numc := GetRandsLimited(60000)
+
+	numImgsPtr := flag.Int("num-images", 60000, "The number of images to generate.")
+	fontsLocationPtr := flag.String("fonts", "/usr/share/fonts", "The location to get fonts from.")
+	maxAnglePtr := flag.Float64("angle", 15.0, "The maximum angle (in degrees) to rotate the letters.")
+	maxOffsetX := flag.Int("max-offset-x", 5, "The maximum number of pixels (X axis) to offset the digit from the top left corner.")
+	maxOffsetY := flag.Int("max-offset-y", 5, "The maximum number of pixels (Y axis)  to offset the digit from the top left corner.")
+	saveFileImages := flag.String("img-file", "images.img", "The file to store the MegaNIST images in.")
+	saveFileLabels := flag.String("label-file", "images.label", "The file to store the MegaNIST labels in.")
+
+
+	flag.Parse()
+
+	numc := GetRandsLimited(int(*numImgsPtr))
 	numc2 := GetRands()
 
-	anglesc := GetRandAngles(numc2, 15*3.141592/180.0)
-	fontsc := GetFonts("/usr/share/fonts", numc)
-	coordsc := GetRandCoords(numc2, 5, 5)
+	anglesc := GetRandAngles(numc2, (*maxAnglePtr)*3.141592/180.0)
+	fontsc := GetFonts(*fontsLocationPtr, numc)
+	coordsc := GetRandCoords(numc2, *maxOffsetX, *maxOffsetY)
 
 	imgc := GetImages(coordsc, anglesc, fontsc, numc2)
-	SaveImgs(60000, imgc, "/tmp/images.img", "/tmp/images.label")
+	SaveImgs(uint32(*numImgsPtr), imgc, *saveFileImages, *saveFileLabels)
 }
