@@ -4,6 +4,7 @@ import "os"
 import "encoding/binary"
 import "gopkg.in/gographics/imagick.v3/imagick"
 import "fmt"
+import "runtime"
 
 func SaveImgs(numImgs uint32, inputc chan Img, fnameImg string, fnameLabel string) {
 	fileImg, err := os.Create(fnameImg)
@@ -51,6 +52,7 @@ func SaveImgs(numImgs uint32, inputc chan Img, fnameImg string, fnameLabel strin
 		if err != nil {
 			panic(err)
 		}
+		runtime.GC()
 	}
 }
 
@@ -67,7 +69,7 @@ func flattenImg(image Img) []byte {
 
 			intensity := byte(uint8(colorWand.GetRed()*255.0))
 			ret[y*28+x]=intensity
-			colorWand.Destroy()
+			//colorWand.Destroy()
 		}
 	}
 	image.Image.Destroy()
