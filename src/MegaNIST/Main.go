@@ -86,17 +86,25 @@ func main() {
 	maxOffsetY := flag.Int("max-offset-y", 5, "The maximum number of pixels (Y axis)  to offset the digit from the top left corner.")
 	saveFileImages := flag.String("img-file", "images.img", "The file to store the MegaNIST images in.")
 	saveFileLabels := flag.String("label-file", "images.label", "The file to store the MegaNIST labels in.")
-
+	doReadImages := flag.Bool("use-files", false, "Use hand drawn image files rather than fonts. Use in combination with -use-dir.")
+	dirUsed := flag.String("use-dir", "dir", "Specify what directory to use for gathering hand written digits.")
 
 	flag.Parse()
 
-	numc := GetRandsLimited(int(*numImgsPtr))
-	numc2 := GetRands()
+	if *doReadImages {
+		filec := FindFiles(*dirUsed, true)
+		imgc := GetDrawnImages(filec, false)
+		SaveImgs(uint32(*numImgsPtr), imgc, *saveFileImages, *saveFileLabels)
 
-	anglesc := GetRandAngles(numc2, (*maxAnglePtr)*3.141592/180.0)
-	fontsc := GetFonts(*fontsLocationPtr, numc)
-	coordsc := GetRandCoords(numc2, *maxOffsetX, *maxOffsetY)
+	} else {
+		numc := GetRandsLimited(int(*numImgsPtr))
+		numc2 := GetRands()
 
-	imgc := GetImages(coordsc, anglesc, fontsc, numc2)
-	SaveImgs(uint32(*numImgsPtr), imgc, *saveFileImages, *saveFileLabels)
+		anglesc := GetRandAngles(numc2, (*maxAnglePtr)*3.141592/180.0)
+		fontsc := GetFonts(*fontsLocationPtr, numc)
+		coordsc := GetRandCoords(numc2, *maxOffsetX, *maxOffsetY)
+
+		imgc := GetFontImages(coordsc, anglesc, fontsc, numc2)
+		SaveImgs(uint32(*numImgsPtr), imgc, *saveFileImages, *saveFileLabels)
+	}
 }

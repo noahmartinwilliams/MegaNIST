@@ -16,7 +16,7 @@ type Merged struct {
 	Num int
 }
 
-func GetImages(coords chan Coord, angles chan float64, fonts chan *DrawingWand, numc chan int) chan Img {
+func GetFontImages(coords chan Coord, angles chan float64, fonts chan *DrawingWand, numc chan int) chan Img {
 	retc := make(chan Img, 1024)
 	inputc := make(chan Merged, 1024)
 	go func() {
@@ -82,4 +82,38 @@ func launchImager(wg *sync.WaitGroup, retc chan Img, input Merged) {
 		retc <- Img{Image:img, Number:input.Num}
 
 	}()
+}
+
+func GetDrawnImages(inputc chan string, doPanic bool) chan Img {
+	retc := make(chan Img, 1024)
+	go func() {
+		defer close(retc)
+		var wg sync.WaitGroup
+		x := 0 
+		for input := range inputc {
+			if x % 1024 == 1 {
+				wg.Wait()
+			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				mw := NewMagickWand()
+				err := mw.ReadImage(input) 
+				if err != nil && doPanic{
+					panic(err)
+				} else if err != nil{
+					return
+				}
+				num, err := strconv.Atoi(string(input[0]))
+				if err != nil && doPanic {
+					panic(err)
+				} else if err != nil {
+					return
+				}
+				retc <- Img{Image:mw, Number:num}
+			} ()
+		}
+		wg.Wait()
+	} ()
+	return retc
 }
